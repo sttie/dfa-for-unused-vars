@@ -68,7 +68,7 @@ class Parser(private val lexer: Lexer) {
                 getNextToken()
                 return null
             }
-            else                                 -> {
+            else -> {
                 panic("Unexpected token: ${currentToken.lexeme}")
                 return null
             }
@@ -246,21 +246,19 @@ class Parser(private val lexer: Lexer) {
             panic(errorMsg)
     }
 
-    // Под выкидывание исключения неслучайно был создан отдельный метод: здесь можно
-    // в будущем реализовать восстановление после ошибки
     private fun panic(message: String) {
         throw ParserException(message, currentToken)
     }
 
 
     private fun isCompareOperator(token: Token): Boolean =
-        token.type == TokenType.GREATER || token.type == TokenType.LESS
+        token.type in listOf(TokenType.GREATER, TokenType.LESS)
 
     private fun isPlusOrMinusOperator(token: Token): Boolean =
-        token.type == TokenType.PLUS || token.type == TokenType.MINUS
+        token.type in listOf(TokenType.PLUS, TokenType.MINUS)
 
     private fun isMultOrDivOperator(token: Token): Boolean =
-        token.type == TokenType.MULT || token.type == TokenType.DIV
+        token.type in listOf(TokenType.MULT, TokenType.DIV)
 
     private fun isOperator(token: Token): Boolean =
         isCompareOperator(token) || isPlusOrMinusOperator(token) || isMultOrDivOperator(token)

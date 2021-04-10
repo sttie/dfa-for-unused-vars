@@ -1,12 +1,12 @@
 package visitors
 
 import ast.*
+import context.ProgramContext
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
 class AssignmentsVisitor : Visitor {
-    var declaredVariables = HashSet<String>()
     var unusedAssignments = HashMap<String, Stack<AssignNode>>()
         private set
     private var cycleWalk: Boolean = false
@@ -20,6 +20,8 @@ class AssignmentsVisitor : Visitor {
         val leftOperandName = node.getLeftOperandName()
         val rightOperand = node.getRightOperand()
 
+        ProgramContext.updateContext(leftOperandName)
+
         // Получаем список используемых переменных справа от =
         val varsVisitor = UsedVariablesVisitor()
         rightOperand.acceptVisitor(varsVisitor)
@@ -30,7 +32,6 @@ class AssignmentsVisitor : Visitor {
         // Идея в том, чтобы добавлять новые записи в unusedAssignments только при первом проходе по телу цикла,
         // а при втором - только удалять
         if (!cycleWalk) {
-            declaredVariables.add(leftOperandName)
             if (!unusedAssignments.containsKey(leftOperandName))
                 unusedAssignments[leftOperandName] = Stack()
             unusedAssignments[leftOperandName]!!.add(node)
@@ -86,8 +87,7 @@ class AssignmentsVisitor : Visitor {
 
         val constantEvalVisitor = ConstantToBoolEvalVisitor()
         node.acceptVisitor(constantEvalVisitor)
-        val a = constantEvalVisitor.getEvaluatedValue()
-        return a
+        return constantEvalVisitor.getEvaluatedValue()
     }
 
     private fun updateUnused(variables: ArrayList<String>, leftOperandName: String = "") {
@@ -102,7 +102,7 @@ class AssignmentsVisitor : Visitor {
 
     private fun throwIfWasNotDeclared(variablesIds: ArrayList<String>, line: Int) {
         for (id in variablesIds)
-            if (!declaredVariables.contains(id))
+            if (!ProgramContext.contains(id))
                 throw UndeclaredVariableUsingException(id, line)
     }
 }
