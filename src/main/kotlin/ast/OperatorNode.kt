@@ -4,8 +4,9 @@ import visitors.Visitor
 import java.util.*
 
 open class OperatorNode(
-    val operator: String
-) : Node() {
+    val operator: String,
+    line: Int
+) : Node(line = line) {
     override fun acceptVisitor(visitor: Visitor) {
         visitor.visitOperator(this)
     }

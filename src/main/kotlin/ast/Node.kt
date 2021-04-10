@@ -4,7 +4,8 @@ import visitors.Visitor
 import java.util.*
 
 abstract class Node(
-    val children: LinkedList<Node> = LinkedList()
+    val children: LinkedList<Node> = LinkedList(),
+    val line: Int
 ) {
     abstract fun acceptVisitor(visitor: Visitor)
 

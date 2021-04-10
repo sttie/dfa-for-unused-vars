@@ -2,7 +2,9 @@ package ast
 
 import visitors.Visitor
 
-class LessOperatorNode : OperatorNode("<") {
+class LessOperatorNode(
+    line: Int
+) : OperatorNode("<", line) {
     override fun acceptVisitor(visitor: Visitor) {
         visitor.visitLessOperator(this)
     }

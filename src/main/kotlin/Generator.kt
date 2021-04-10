@@ -1,17 +1,22 @@
 import java.io.File
 import kotlin.random.Random
 
-
-class Generator(
-    private val file: File,
-    private val instructionsAmount: Int = 15
-) {
+object Generator {
+    private var instructionsAmount: Int = 0
     private var currentInstruction: Int = 0
+    private var indentation: Int = 0
+    private lateinit var file: File
+    private const val maxDepth: Int = 15
+    private var initialDepth: Int = 0
 
-    fun generateCode() {
-        // Очистка кода
-        file.writeText("")
+    fun generateProgram(file: File, instructionsAmount: Int) {
+        this.file = file
+        this.instructionsAmount = instructionsAmount
+        initialDepth = Thread.currentThread().stackTrace.size
         currentInstruction = 0
+        indentation = 0
+
+        file.writeText("")
         generateStatementList()
     }
 
@@ -25,23 +30,40 @@ class Generator(
         }
     }
 
+    // if_statement ::= 'if' expression statement_list 'end'
     private fun generateIfStatement() {
+        file.appendText("\t".repeat(indentation))
+
+        indentation++
         file.appendText("if ")
         generateExpression()
         file.appendText("\n")
         generateStatementList()
+
+        indentation--
+        file.appendText("\t".repeat(indentation))
         file.appendText("end\n")
     }
 
+    // while_statement ::= 'while' expression statement_list 'en  d'
     private fun generateWhileStatement() {
+        file.appendText("\t".repeat(indentation))
+
+        indentation++
         file.appendText("while ")
         generateExpression()
         file.appendText("\n")
         generateStatementList()
+
+        indentation--
+        file.appendText("\t".repeat(indentation))
         file.appendText("end\n")
     }
 
+    // assignment_statement ::= variable '=' expression
     private fun generateAssignmentStatement() {
+        file.appendText("\t".repeat(indentation))
+
         generateVariable()
         file.appendText(" = ")
         generateExpression()
@@ -51,8 +73,9 @@ class Generator(
     // expression ::= compare_term (compare_operator compare_term)*
     private fun generateExpression() {
         generateCompareTerm()
+
         while (decideToContinue()) {
-            file.appendText(listOf("<", ">")[Random.nextInt(0, 2)])
+            file.appendText(listOf(" < ", " > ").random())
             generateCompareTerm()
         }
     }
@@ -60,8 +83,9 @@ class Generator(
     // compare_term ::= add_term (add_operator add_term)*
     private fun generateCompareTerm() {
         generateAddTerm()
+
         while (decideToContinue()) {
-            file.appendText(listOf("+", "-")[Random.nextInt(0, 2)])
+            file.appendText(listOf(" + ", " - ").random())
             generateAddTerm()
         }
     }
@@ -69,8 +93,9 @@ class Generator(
     // add_term ::= factor_term (mult_operator factor_term)*
     private fun generateAddTerm() {
         generateFactorTerm()
+
         while (decideToContinue()) {
-            file.appendText(listOf("*", "/")[Random.nextInt(0, 2)])
+            file.appendText(listOf(" * ", " / ").random())
             generateFactorTerm()
         }
     }
@@ -90,12 +115,18 @@ class Generator(
     }
 
     private fun generateVariable() {
-        file.appendText(('a'..'z').toList()[Random.nextInt(0, 26)].toString())
+        file.appendText(('a'..'z').toList().random().toString())
     }
 
     private fun generateConstant() {
         file.appendText(Random.nextInt(0, 4243).toString())
     }
 
-    private fun decideToContinue(): Boolean = Random.nextInt(0, 10) in 7..9
+
+    private fun appendTextWithIndentation(text: String) {
+        file.appendText("${"\t".repeat(indentation)}text")
+    }
+
+    private fun decideToContinue(): Boolean
+        = Thread.currentThread().stackTrace.size - initialDepth < maxDepth && Random.nextInt(0, 10) in 7..9
 }

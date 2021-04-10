@@ -2,9 +2,11 @@ package visitors
 
 import ast.*
 import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
 class AssignmentsVisitor : Visitor {
+    var declaredVariables = HashSet<String>()
     var unusedAssignments = HashMap<String, Stack<AssignNode>>()
         private set
     private var cycleWalk: Boolean = false
@@ -23,9 +25,12 @@ class AssignmentsVisitor : Visitor {
         rightOperand.acceptVisitor(varsVisitor)
         val variablesInExpr = varsVisitor.usedVariables
 
+        throwIfWasNotDeclared(variablesInExpr, node.line)
+
         // Идея в том, чтобы добавлять новые записи в unusedAssignments только при первом проходе по телу цикла,
         // а при втором - только удалять
         if (!cycleWalk) {
+            declaredVariables.add(leftOperandName)
             if (!unusedAssignments.containsKey(leftOperandName))
                 unusedAssignments[leftOperandName] = Stack()
             unusedAssignments[leftOperandName]!!.add(node)
@@ -40,8 +45,10 @@ class AssignmentsVisitor : Visitor {
         node.acceptVisitor(varsVisitor)
         val variablesInCondition = varsVisitor.usedVariables
 
+        throwIfWasNotDeclared(variablesInCondition, node.line)
+
         // Если условие константное и всегда false, то не нужно проверять эту ветку выполнения программы
-        if (detectConstantFalse(node.condition, variablesInCondition)) return
+        if (!detectConstantFalse(node.condition, variablesInCondition)) return
 
         for (ast in node.children)
             ast.acceptVisitor(this)
@@ -52,8 +59,10 @@ class AssignmentsVisitor : Visitor {
         node.acceptVisitor(varsVisitor)
         val variablesInCondition = varsVisitor.usedVariables
 
-        // Если условие константное и всегда false, то не нужно проверять эту ветку исполнения
-        if (detectConstantFalse(node.condition, variablesInCondition)) return
+        throwIfWasNotDeclared(variablesInCondition, node.line)
+
+        // Если условие константное и всегда false, то не нужно проверять эту ветку выполнения программы
+        if (!detectConstantFalse(node.condition, variablesInCondition)) return
 
         val walkThroughCycleBody: () -> Unit = {
             if (variablesInCondition.isNotEmpty())
@@ -63,8 +72,6 @@ class AssignmentsVisitor : Visitor {
                 ast.acceptVisitor(this)
         }
 
-        // Суть такая: если нам нужно проверить цикл, мы можем пройтись по его телу один раз по обычному алгоритму,
-        // а во второй раз пройтись по нему, только удаляя записи из unusedAssignments
         walkThroughCycleBody()
         cycleWalk = true
         walkThroughCycleBody()
@@ -74,12 +81,13 @@ class AssignmentsVisitor : Visitor {
     private fun detectConstantFalse(node: Node, variablesInCondition: ArrayList<String>): Boolean {
         if (variablesInCondition.isNotEmpty()) {
             updateUnused(variablesInCondition)
-            return false
+            return true
         }
 
         val constantEvalVisitor = ConstantToBoolEvalVisitor()
         node.acceptVisitor(constantEvalVisitor)
-        return constantEvalVisitor.evaluatedValue!!
+        val a = constantEvalVisitor.getEvaluatedValue()
+        return a
     }
 
     private fun updateUnused(variables: ArrayList<String>, leftOperandName: String = "") {
@@ -90,5 +98,11 @@ class AssignmentsVisitor : Visitor {
                     unusedAssignments.remove(it)
             }
         }
+    }
+
+    private fun throwIfWasNotDeclared(variablesIds: ArrayList<String>, line: Int) {
+        for (id in variablesIds)
+            if (!declaredVariables.contains(id))
+                throw UndeclaredVariableUsingException(id, line)
     }
 }

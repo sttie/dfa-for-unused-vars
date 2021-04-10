@@ -46,7 +46,7 @@ class Parser(private val lexer: Lexer) {
 
     // statement_list ::= statement statement_list | eps
     private fun parseStatementList(endMarker: TokenType = TokenType.EMPTY): StatementListNode {
-        val astForest = StatementListNode()
+        val astForest = StatementListNode(currentToken.line)
 
         while (currentToken.type != TokenType.ENDFILE && currentToken.type != endMarker) {
             val node = parseStatement()
@@ -81,7 +81,7 @@ class Parser(private val lexer: Lexer) {
         // Пропускаем 'if'
         getNextToken()
 
-        val ifNode = IfNode(parseExpression())
+        val ifNode = IfNode(parseExpression(), currentToken.line)
         ifNode.addNodes(parseStatementList(TokenType.END).children)
         match(currentToken.type, TokenType.END, "Expected end keyword, but got ${currentToken.lexeme}")
         getNextToken()
@@ -95,7 +95,7 @@ class Parser(private val lexer: Lexer) {
         // Пропускаем 'while'
         getNextToken()
 
-        val whileNode = WhileNode(parseExpression())
+        val whileNode = WhileNode(parseExpression(), currentToken.line)
         whileNode.addNodes(parseStatementList(TokenType.END).children)
         match(currentToken.type, TokenType.END, "Expected end keyword, but got ${currentToken.lexeme}")
         getNextToken()
@@ -111,7 +111,7 @@ class Parser(private val lexer: Lexer) {
         match(currentToken.type, TokenType.ASSIGN, "Expected '=', but got ${currentToken.lexeme}")
         getNextToken()
 
-        return AssignNode(LinkedList(listOf(varNode, parseExpression())))
+        return AssignNode(LinkedList(listOf(varNode, parseExpression())), currentToken.line)
     }
 
 
@@ -123,9 +123,9 @@ class Parser(private val lexer: Lexer) {
         while (currentToken.type != TokenType.NEWLINE && isCompareOperator(currentToken)) {
             val newCompareNode =
                 if (currentToken.type == TokenType.LESS)
-                    LessOperatorNode()
+                    LessOperatorNode(currentToken.line)
                 else
-                    GreaterOperatorNode()
+                    GreaterOperatorNode(currentToken.line)
 
             if (operatorNode == null) {
                 operatorNode = newCompareNode
@@ -152,9 +152,9 @@ class Parser(private val lexer: Lexer) {
         while (currentToken.type != TokenType.NEWLINE && isPlusOrMinusOperator(currentToken)) {
             val newAddNode =
                 if (currentToken.type == TokenType.PLUS)
-                    PlusOperatorNode()
+                    PlusOperatorNode(currentToken.line)
                 else
-                    MinusOperatorNode()
+                    MinusOperatorNode(currentToken.line)
 
             if (operatorNode == null) {
                 operatorNode = newAddNode
@@ -181,9 +181,9 @@ class Parser(private val lexer: Lexer) {
         while (currentToken.type != TokenType.NEWLINE && isMultOrDivOperator(currentToken)) {
             val newMultNode =
                 if (currentToken.type == TokenType.MULT)
-                    MultOperatorNode()
+                    MultOperatorNode(currentToken.line)
                 else
-                    DivOperatorNode()
+                    DivOperatorNode(currentToken.line)
 
             if (operatorNode == null) {
                 operatorNode = newMultNode
@@ -224,14 +224,14 @@ class Parser(private val lexer: Lexer) {
 
     private fun parseVariable(): Node {
         match(currentToken.type, TokenType.ID,"Expected id, but got ${currentToken.lexeme}")
-        val varNode = VariableNode(currentToken.lexeme)
+        val varNode = VariableNode(currentToken.lexeme, currentToken.line)
         getNextToken()
         return varNode
     }
 
     private fun parseConstant(): Node {
         match(currentToken.type, TokenType.INTEGER, "Expected integer, but got ${currentToken.lexeme}")
-        val constantNode = ConstantNode(currentToken.lexeme.toInt())
+        val constantNode = ConstantNode(currentToken.lexeme.toInt(), currentToken.line)
         getNextToken()
         return constantNode
     }

@@ -4,8 +4,9 @@ import visitors.Visitor
 import java.util.*
 
 class AssignNode(
-    linkedNodes: LinkedList<Node> = LinkedList()
-) : Node(linkedNodes) {
+    linkedNodes: LinkedList<Node> = LinkedList(),
+    line: Int
+) : Node(linkedNodes, line) {
 
     override fun acceptVisitor(visitor: Visitor) {
         visitor.visitAssign(this)
