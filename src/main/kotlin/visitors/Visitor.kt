@@ -11,7 +11,7 @@ interface Visitor {
     fun visitIf(node: IfNode)                           {}
     fun visitWhile(node: WhileNode)                     {}
 
-    // Эти функции не пусты потому, что они наследуются от OperatorNode =>
+    // Эти функции не пусты потому, что операторы наследуются от OperatorNode =>
     // они должны по умолчанию отправляться в visitOperatorNode
     fun visitPlusOperator(node: PlusOperatorNode) {
         visitOperator(node)
